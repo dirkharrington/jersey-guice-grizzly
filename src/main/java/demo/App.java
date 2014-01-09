@@ -44,9 +44,19 @@ public class App {
 			return Guice.createInjector(new ServletModule(){
 				@Override
 				protected void configureServlets() {
-					bind(Resource.class);
-					bind(Counter.class);
-					serve("*").with(GuiceContainer.class);
+                    // excplictly bind GuiceContainer before binding Jersey resources
+                    // otherwise resource won't be available for GuiceContainer
+                    // when using two-phased injection
+                    bind(GuiceContainer.class);
+
+                    // bind Jersey resources
+                    PackagesResourceConfig resourceConfig = new PackagesResourceConfig("demo");
+                    for (Class<?> resource : resourceConfig.getClasses()) {
+                        bind(resource);
+                    }
+
+                    // Serve resources with Jerseys GuiceContainer
+                    serve("/*").with(GuiceContainer.class);
 				}		
 			});
 		}		
